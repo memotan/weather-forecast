@@ -1,0 +1,54 @@
+name: Weather Notify
+
+on:
+  schedule:
+    - cron: "30 22 * * *" # 07:30 JST — 本日の天気予報
+    - cron: "0 3 * * *"   # 12:00 JST — 本日午後〜夜の天気予報
+    - cron: "0 11 * * *"  # 20:00 JST — 明日の天気予報
+  workflow_dispatch:
+    inputs:
+      window:
+        description: "通知ウィンドウ"
+        required: true
+        default: "morning"
+        type: choice
+        options:
+          - morning
+          - afternoon
+          - evening
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Determine notification window
+        id: window
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "value=${{ inputs.window }}" >> "$GITHUB_OUTPUT"
+          else
+            case "${{ github.event.schedule }}" in
+              "30 22 * * *") echo "value=morning" >> "$GITHUB_OUTPUT" ;;
+              "0 3 * * *") echo "value=afternoon" >> "$GITHUB_OUTPUT" ;;
+              "0 11 * * *") echo "value=evening" >> "$GITHUB_OUTPUT" ;;
+              *)
+                echo "unexpected schedule: ${{ github.event.schedule }}"
+                exit 1
+                ;;
+            esac
+          fi
+
+      - name: Send weather notification
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          NTFY_SERVER: ${{ secrets.NTFY_SERVER }}
+        run: python -m weather_notify.cli --window "${{ steps.window.outputs.value }}"
