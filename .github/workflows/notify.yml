@@ -34,7 +34,7 @@ jobs:
         id: window
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "value=${{ inputs.window }}" >> "$GITHUB_OUTPUT"
+            echo "value=${{ github.event.inputs.window }}" >> "$GITHUB_OUTPUT"
           else
             case "${{ github.event.schedule }}" in
               "30 22 * * *") echo "value=morning" >> "$GITHUB_OUTPUT" ;;
