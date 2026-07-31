@@ -85,13 +85,13 @@ def _result(category, confidence="高", pop_avg=20, temp_max_avg=29.0, temp_min_
 
 def test_format_result_is_a_single_compact_line():
     line = format_result("日野市", _result("晴れ"))
-    assert line == "日野市  ☀️晴れ👍  ☔20%  🌡29/21℃"
+    assert line == "日野市  ☀️晴れ🟢  ☔20%  🌡29/21℃"
 
 
 def test_format_result_omits_missing_fields():
     result = _result("くもり", confidence="低", pop_avg=None, temp_max_avg=None, temp_min_avg=None)
     line = format_result("墨田区", result)
-    assert line == "墨田区  ☁️くもり❓"
+    assert line == "墨田区  ☁️くもり🔴"
 
 
 def test_overall_ntfy_tag_picks_most_severe_category():

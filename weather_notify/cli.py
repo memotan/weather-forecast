@@ -19,7 +19,8 @@ WINDOW_TITLES = {
     "evening": "明日の天気予報",
 }
 
-CONFIDENCE_EMOJI = {"高": "👍", "中": "🤝", "低": "❓"}
+# Traffic-light style: how well the sources agree on the forecast category.
+CONFIDENCE_EMOJI = {"高": "🟢", "中": "🟡", "低": "🔴"}
 
 
 def target_date(window: str, now: dt.datetime) -> dt.date:
