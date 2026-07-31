@@ -1,7 +1,14 @@
 import datetime as dt
 from zoneinfo import ZoneInfo
 
-from weather_notify.cli import collect_afternoon_samples, collect_daily_samples, target_date
+from weather_notify.cli import (
+    collect_afternoon_samples,
+    collect_daily_samples,
+    format_result,
+    overall_ntfy_tag,
+    target_date,
+)
+from weather_notify.ensemble import EnsembleResult
 
 JST = ZoneInfo("Asia/Tokyo")
 NOW = dt.datetime(2026, 7, 31, 12, 0, tzinfo=JST)
@@ -59,3 +66,38 @@ def test_collect_afternoon_samples_only_uses_hours_from_noon():
 
     pop_sample = next(s for s in samples if s.source == "jma:pop")
     assert pop_sample.pop == 40.0
+
+
+def _result(category, confidence="高", pop_avg=20, temp_max_avg=29.0, temp_min_avg=21.0):
+    return EnsembleResult(
+        category=category,
+        category_confidence=confidence,
+        category_votes={category: 2},
+        pop_avg=pop_avg,
+        pop_range=(10, 30),
+        temp_max_avg=temp_max_avg,
+        temp_max_range=(28.0, 30.0),
+        temp_min_avg=temp_min_avg,
+        temp_min_range=(20.0, 22.0),
+        sample_count=6,
+    )
+
+
+def test_format_result_is_a_single_compact_line():
+    line = format_result("日野市", _result("晴れ"))
+    assert line == "日野市  ☀️晴れ👍  ☔20%  🌡29/21℃"
+
+
+def test_format_result_omits_missing_fields():
+    result = _result("くもり", confidence="低", pop_avg=None, temp_max_avg=None, temp_min_avg=None)
+    line = format_result("墨田区", result)
+    assert line == "墨田区  ☁️くもり❓"
+
+
+def test_overall_ntfy_tag_picks_most_severe_category():
+    results = [_result("晴れ"), _result("雨")]
+    assert overall_ntfy_tag(results) == "rain_cloud"
+
+
+def test_overall_ntfy_tag_falls_back_to_unknown():
+    assert overall_ntfy_tag([]) == "grey_question"

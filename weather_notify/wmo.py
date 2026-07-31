@@ -13,6 +13,27 @@ _JMA_KEYWORDS = (
     ("晴れ", "晴"),
 )
 
+CATEGORY_EMOJI = {
+    "晴れ": "☀️",
+    "くもり": "☁️",
+    "雨": "🌧️",
+    "雪": "❄️",
+    "雷雨": "⛈️",
+    "霧": "🌫️",
+    "不明": "❔",
+}
+
+# ntfy "Tags" header accepts emoji shortcodes and renders one next to the title.
+CATEGORY_NTFY_TAG = {
+    "晴れ": "sunny",
+    "くもり": "cloud",
+    "雨": "rain_cloud",
+    "雪": "snowflake",
+    "雷雨": "thunder_cloud_and_rain",
+    "霧": "fog",
+    "不明": "grey_question",
+}
+
 
 def wmo_code_to_category(code) -> str:
     if code is None:

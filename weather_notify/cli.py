@@ -9,6 +9,7 @@ from . import config
 from .ensemble import EnsembleResult, Sample, summarize
 from .notify import send_ntfy
 from .sources import jma, open_meteo
+from .wmo import CATEGORY_EMOJI, CATEGORY_NTFY_TAG, CATEGORY_ORDER
 
 JST = ZoneInfo("Asia/Tokyo")
 
@@ -17,6 +18,8 @@ WINDOW_TITLES = {
     "afternoon": "本日午後〜夜の天気予報",
     "evening": "明日の天気予報",
 }
+
+CONFIDENCE_EMOJI = {"高": "👍", "中": "🤝", "低": "❓"}
 
 
 def target_date(window: str, now: dt.datetime) -> dt.date:
@@ -115,34 +118,32 @@ def collect_afternoon_samples(
 
 
 def format_result(location_name: str, result: EnsembleResult) -> str:
-    lines = [f"■ {location_name}"]
-    if result.category_votes:
-        votes_str = "・".join(
-            f"{k}:{v}" for k, v in sorted(result.category_votes.items(), key=lambda kv: -kv[1])
-        )
-        lines.append(f"天気: {result.category}（確度:{result.category_confidence} / {votes_str}）")
-    else:
-        lines.append("天気: 不明")
+    emoji = CATEGORY_EMOJI.get(result.category, "❔")
+    confidence = CONFIDENCE_EMOJI.get(result.category_confidence, "")
 
+    fields = [f"{emoji}{result.category}{confidence}"]
     if result.pop_avg is not None:
-        rng = f"（{result.pop_range[0]:.0f}〜{result.pop_range[1]:.0f}%）" if result.pop_range else ""
-        lines.append(f"降水確率: 平均{result.pop_avg:.0f}%{rng}")
+        fields.append(f"☔{result.pop_avg:.0f}%")
+    if result.temp_max_avg is not None and result.temp_min_avg is not None:
+        fields.append(f"🌡{result.temp_max_avg:.0f}/{result.temp_min_avg:.0f}℃")
+    elif result.temp_max_avg is not None:
+        fields.append(f"🌡{result.temp_max_avg:.0f}℃")
 
-    if result.temp_max_avg is not None:
-        rng = f"（{result.temp_max_range[0]}〜{result.temp_max_range[1]}℃）" if result.temp_max_range else ""
-        lines.append(f"最高気温: 平均{result.temp_max_avg}℃{rng}")
-
-    if result.temp_min_avg is not None:
-        rng = f"（{result.temp_min_range[0]}〜{result.temp_min_range[1]}℃）" if result.temp_min_range else ""
-        lines.append(f"最低気温: 平均{result.temp_min_avg}℃{rng}")
-
-    lines.append(f"(情報源 {result.sample_count}件)")
-    return "\n".join(lines)
+    return f"{location_name}  " + "  ".join(fields)
 
 
-def run(window: str, now: dt.datetime = None) -> str:
+def overall_ntfy_tag(results: List[EnsembleResult]) -> str:
+    categories = {r.category for r in results}
+    for category in CATEGORY_ORDER:
+        if category in categories:
+            return CATEGORY_NTFY_TAG[category]
+    return CATEGORY_NTFY_TAG["不明"]
+
+
+def run(window: str, now: dt.datetime = None) -> Tuple[str, str]:
     now = now or dt.datetime.now(JST)
-    blocks = []
+    lines = []
+    results = []
     for location in config.LOCATIONS:
         raw = open_meteo.fetch(location.latitude, location.longitude)
         jma_data = jma.fetch_forecast(location.jma_office_code)
@@ -157,9 +158,12 @@ def run(window: str, now: dt.datetime = None) -> str:
             samples = collect_daily_samples(window, om_daily, jma_weathers, jma_pops, now)
 
         result = summarize(samples)
-        blocks.append(format_result(location.name, result))
+        results.append(result)
+        lines.append(format_result(location.name, result))
 
-    return "\n\n".join(blocks)
+    message = "\n".join(lines)
+    tag = overall_ntfy_tag(results)
+    return message, tag
 
 
 def main() -> None:
@@ -169,10 +173,10 @@ def main() -> None:
     args = parser.parse_args()
 
     title = WINDOW_TITLES[args.window]
-    message = run(args.window)
+    message, tag = run(args.window)
 
     if args.dry_run:
-        print(f"[{title}]\n{message}")
+        print(f"[{title}] (tag={tag})\n{message}")
         return
 
     topic = os.environ["NTFY_TOPIC"]
@@ -181,7 +185,7 @@ def main() -> None:
     # GitHub Actions passes an empty string (not "unset") for a secret that was
     # never configured, so os.environ.get's default never kicks in on its own.
     server = os.environ.get("NTFY_SERVER") or "https://ntfy.sh"
-    send_ntfy(server, topic, title, message)
+    send_ntfy(server, topic, title, message, tags=tag)
 
 
 if __name__ == "__main__":
