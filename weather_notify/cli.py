@@ -176,7 +176,11 @@ def main() -> None:
         return
 
     topic = os.environ["NTFY_TOPIC"]
-    server = os.environ.get("NTFY_SERVER", "https://ntfy.sh")
+    if not topic:
+        raise SystemExit("NTFY_TOPIC is empty. Set it in the repository's Actions secrets.")
+    # GitHub Actions passes an empty string (not "unset") for a secret that was
+    # never configured, so os.environ.get's default never kicks in on its own.
+    server = os.environ.get("NTFY_SERVER") or "https://ntfy.sh"
     send_ntfy(server, topic, title, message)
 
 
