@@ -2,9 +2,9 @@ name: Weather Notify
 
 on:
   schedule:
-    - cron: "30 22 * * *" # 07:30 JST — 本日の天気予報
-    - cron: "0 3 * * *"   # 12:00 JST — 本日午後〜夜の天気予報
-    - cron: "0 11 * * *"  # 20:00 JST — 明日の天気予報
+    - cron: "37 22 * * *" # 07:37 JST — 本日の天気予報
+    - cron: "7 3 * * *"   # 12:07 JST — 本日午後〜夜の天気予報
+    - cron: "7 11 * * *"  # 20:07 JST — 明日の天気予報
   workflow_dispatch:
     inputs:
       window:
@@ -37,9 +37,9 @@ jobs:
             echo "value=${{ github.event.inputs.window }}" >> "$GITHUB_OUTPUT"
           else
             case "${{ github.event.schedule }}" in
-              "30 22 * * *") echo "value=morning" >> "$GITHUB_OUTPUT" ;;
-              "0 3 * * *") echo "value=afternoon" >> "$GITHUB_OUTPUT" ;;
-              "0 11 * * *") echo "value=evening" >> "$GITHUB_OUTPUT" ;;
+              "37 22 * * *") echo "value=morning" >> "$GITHUB_OUTPUT" ;;
+              "7 3 * * *") echo "value=afternoon" >> "$GITHUB_OUTPUT" ;;
+              "7 11 * * *") echo "value=evening" >> "$GITHUB_OUTPUT" ;;
               *)
                 echo "unexpected schedule: ${{ github.event.schedule }}"
                 exit 1
