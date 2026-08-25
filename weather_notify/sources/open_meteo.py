@@ -1,8 +1,7 @@
 from typing import Dict, List
 
-import requests
-
 from .. import config
+from ..http_client import get_json
 from ..wmo import wmo_code_to_category
 
 DAILY_VARS = ["temperature_2m_max", "temperature_2m_min", "precipitation_probability_max", "weather_code"]
@@ -19,9 +18,7 @@ def fetch(latitude: float, longitude: float) -> dict:
         "forecast_days": 3,
         "models": ",".join(config.OPEN_METEO_MODELS),
     }
-    response = requests.get(config.OPEN_METEO_URL, params=params, timeout=20)
-    response.raise_for_status()
-    return response.json()
+    return get_json(config.OPEN_METEO_URL, params=params)
 
 
 def _series(raw: dict, section: str, var: str, model: str) -> list:

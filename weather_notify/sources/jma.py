@@ -1,23 +1,18 @@
 from typing import Iterator, List, Tuple
 
-import requests
-
 from .. import config
+from ..http_client import get_json
 from ..wmo import jma_text_to_category
 
 
 def fetch_forecast(office_code: str) -> list:
     url = config.JMA_FORECAST_URL.format(office_code=office_code)
-    response = requests.get(url, timeout=20)
-    response.raise_for_status()
-    return response.json()
+    return get_json(url)
 
 
 def fetch_overview(office_code: str) -> str:
     url = config.JMA_OVERVIEW_URL.format(office_code=office_code)
-    response = requests.get(url, timeout=20)
-    response.raise_for_status()
-    return response.json().get("text", "")
+    return get_json(url).get("text", "")
 
 
 def _iter_time_series(data: list) -> Iterator[dict]:
