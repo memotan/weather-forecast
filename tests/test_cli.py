@@ -84,8 +84,8 @@ def _result(category, confidence="高", pop_avg=20, temp_max_avg=29.0, temp_min_
 
 
 def test_format_result_is_a_single_compact_line():
-    line = format_result("日野市", _result("晴れ"))
-    assert line == "日野市  ☀️晴れ🟢  ☔20%  🌡29/21℃"
+    line = format_result("中野区", _result("晴れ"))
+    assert line == "中野区  ☀️晴れ🟢  ☔20%  🌡29/21℃"
 
 
 def test_format_result_omits_missing_fields():
